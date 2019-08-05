@@ -1,0 +1,5 @@
+- Don't statically link libraw in JNI binary.
+- Add/test build support on Linux and Windows.
+- Include JNI binaries in JAR, if possible.
+- Support for loading image from ImageInputStream (by wrapping in LibRaw datastream?)
+

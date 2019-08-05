@@ -1,0 +1,129 @@
+apply plugin: 'java'
+apply plugin: 'cpp'
+apply plugin: 'maven-publish'
+
+group = 'org.libraw'
+version = '0.1-SNAPSHOT'
+sourceCompatibility = 1.7
+compileJava.options.encoding = 'UTF-8'
+
+jar {
+  baseName = 'jlibraw'
+}
+
+repositories {
+  mavenCentral()
+}
+
+println "Building on OS: " + System.properties['os.name']
+println "Using JDK: " + System.properties['java.home']
+
+def SYS_INCLUDE_DIR = this.properties['system.include.dir']
+def SYS_LOCAL_INCLUDE_DIR = this.properties['system.local.include.dir']
+def JNI_INCLUDE_DIR = this.properties['jni.include.dir']
+def JNI_LIB_DIR = this.properties['jni.lib.dir']
+
+println "Using system include directory: " + SYS_INCLUDE_DIR
+println "Using system local include directory: " + SYS_LOCAL_INCLUDE_DIR
+println "Using JNI include directory: " + JNI_INCLUDE_DIR
+println "Using JNI lib directory: " + JNI_LIB_DIR
+
+model {
+  components {
+    jlibraw(NativeLibrarySpec) {
+      sources {
+        cpp {
+          source {
+            srcDir 'src/main/c'
+            include "**/*.cpp"
+          }
+        }
+      }
+      buildTypes {
+        debug
+        release
+      }
+    }
+  }
+  toolChains {
+    gcc(Gcc) {
+      eachPlatform {
+        if (System.properties['os.name'].equals('Mac OS X')) {
+          cppCompiler.withArguments { args ->
+            args << "-O2"
+            args << "-I" + SYS_INCLUDE_DIR
+            args << "-I" + SYS_LOCAL_INCLUDE_DIR
+            args << "-I" + JNI_INCLUDE_DIR
+            args << "-I" + JNI_INCLUDE_DIR + "/darwin"
+            args << "-std=c++11"
+          }
+          linker.withArguments { args ->
+            args << "-O2"
+            args << "-lc++"
+            args << "-llibraw"
+          }
+        } else {
+          path "/opt/rh/devtoolset-2/root/usr/bin/gcc"
+          cppCompiler.withArguments { args ->
+            args << "-O2"
+            args << "-I" + SYS_INCLUDE_DIR
+            args << "-I" + SYS_LOCAL_INCLUDE_DIR
+            args << "-I" + JNI_INCLUDE_DIR
+            args << "-I" + JNI_INCLUDE_DIR + "/linux"
+            args << "-std=c++11"
+          }
+          linker.withArguments { args ->
+            args << "-O2"
+            args << "-lstdc++"
+          }
+        }
+      }
+    }
+    clang(Clang) {
+      eachPlatform {
+        if (System.properties['os.name'].equals('Mac OS X')) {
+          cppCompiler.withArguments { args ->
+            args << "-O2"
+            args << "-I" + SYS_INCLUDE_DIR
+            args << "-I" + SYS_LOCAL_INCLUDE_DIR
+            args << "-I" + JNI_INCLUDE_DIR
+            args << "-I" + JNI_INCLUDE_DIR + "/darwin"
+            args << "-std=c++11"
+          }
+          linker.withArguments { args ->
+            args << "-O2"
+            args << "-lc++"
+            args << "-L/usr/local/Cellar/libraw/0.19.2/lib"
+            args << "-lraw"
+          }
+        } else {
+          cppCompiler.withArguments { args ->
+            args << "-O2"
+            args << "-I" + SYS_INCLUDE_DIR
+            args << "-I" + SYS_LOCAL_INCLUDE_DIR
+            args << "-I" + JNI_INCLUDE_DIR
+            args << "-I" + JNI_INCLUDE_DIR + "/linux"
+            args << "-std=c++11"
+          }
+          linker.withArguments { args ->
+            args << "-O2"
+            args << "-lstdc++"
+          }
+        }
+      }
+    }
+  }
+}
+
+task copyLibBridge(type: Copy) {
+  if (System.properties['os.name'].equals('Mac OS X')) {
+    from "$projectDir/build/binaries/bridgeSharedLibrary/libbridge.dylib"
+  } else {
+    from "$projectDir/build/binaries/bridgeSharedLibrary/libbridge.so"
+  }
+  into 'libs'
+}
+
+dependencies {
+  testCompile "junit:junit:4.11"
+}
