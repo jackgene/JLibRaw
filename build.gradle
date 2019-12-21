@@ -1,5 +1,6 @@
 apply plugin: 'java'
 apply plugin: 'cpp'
+apply plugin: 'maven'
 apply plugin: 'maven-publish'
 
 group = 'org.libraw'
