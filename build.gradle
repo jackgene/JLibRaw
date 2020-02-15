@@ -1,16 +1,19 @@
 apply plugin: 'java'
 apply plugin: 'cpp'
-apply plugin: 'maven'
 apply plugin: 'maven-publish'
 
 group = 'org.libraw'
 version = '0.1-SNAPSHOT'
+archivesBaseName = 'jlibraw'
+
 sourceCompatibility = 1.7
 compileJava.options.encoding = 'UTF-8'
-
-jar {
-  baseName = 'jlibraw'
-}
+// Add dependencies.JDK7_CORE_LIB property to ~/.gradle/gradle.properties
+// referencing core libraries jar (rt.jar or classes.jar)
+// e.g.,
+// dependencies.JDK6_CORE_LIB=<path to classes.jar>
+compileJava.options.bootstrapClasspath =
+  files(getProperty('dependencies.JDK7_CORE_LIB'))
 
 repositories {
   mavenCentral()
@@ -19,10 +22,10 @@ repositories {
 println "Building on OS: " + System.properties['os.name']
 println "Using JDK: " + System.properties['java.home']
 
-def SYS_INCLUDE_DIR = this.properties['system.include.dir']
-def SYS_LOCAL_INCLUDE_DIR = this.properties['system.local.include.dir']
-def JNI_INCLUDE_DIR = this.properties['jni.include.dir']
-def JNI_LIB_DIR = this.properties['jni.lib.dir']
+def SYS_INCLUDE_DIR = getProperty('system.include.dir')
+def SYS_LOCAL_INCLUDE_DIR = getProperty('system.local.include.dir')
+def JNI_INCLUDE_DIR = getProperty('jni.include.dir')
+def JNI_LIB_DIR = getProperty('jni.lib.dir')
 
 println "Using system include directory: " + SYS_INCLUDE_DIR
 println "Using system local include directory: " + SYS_LOCAL_INCLUDE_DIR
@@ -126,5 +129,5 @@ task copyLibBridge(type: Copy) {
 }
 
 dependencies {
-  testCompile "junit:junit:4.11"
+  testImplementation "junit:junit:4.11"
 }
