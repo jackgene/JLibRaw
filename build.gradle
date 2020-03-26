@@ -1,6 +1,8 @@
-apply plugin: 'java'
-apply plugin: 'cpp'
-apply plugin: 'maven-publish'
+plugins {
+  id 'java'
+  id 'cpp'
+  id 'maven' // 'maven-publish' does not work, even though this is deprecated in favor of it
+}
 
 group = 'org.libraw'
 version = '0.1-SNAPSHOT'
