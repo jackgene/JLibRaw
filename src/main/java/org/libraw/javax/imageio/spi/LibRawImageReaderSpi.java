@@ -4,17 +4,26 @@ import org.libraw.javax.imageio.LibRawImageReader;
 
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.FileCacheImageInputStream;
 import javax.imageio.stream.FileImageInputStream;
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Locale;
 
 public class LibRawImageReaderSpi extends ImageReaderSpi {
+    // For accessing the path from a FileImageInputStream
     private static final Field fileImageInputStreamRafField;
     private static final Field randomAccessFilePathField;
+    // For accessing the path from a FileCacheImageInputStream/MemoryCacheImageInputStream
+    private static final Field fileCachedImageInputStreamStreamField;
+    private static final Field memoryCachedImageInputStreamStreamField;
+    private static final Field fileInputStreamPathField;
     static {
         System.loadLibrary("jlibraw");
 
@@ -26,16 +35,53 @@ public class LibRawImageReaderSpi extends ImageReaderSpi {
             randomAccessFilePathField =
                 RandomAccessFile.class.getDeclaredField("path");
             randomAccessFilePathField.setAccessible(true);
+
+            fileCachedImageInputStreamStreamField =
+                FileCacheImageInputStream.class.getDeclaredField("stream");
+            fileCachedImageInputStreamStreamField.setAccessible(true);
+
+            memoryCachedImageInputStreamStreamField =
+                MemoryCacheImageInputStream.class.getDeclaredField("stream");
+            memoryCachedImageInputStreamStreamField.setAccessible(true);
+
+            fileInputStreamPathField =
+                FileInputStream.class.getDeclaredField("path");
+            fileInputStreamPathField.setAccessible(true);
         } catch (NoSuchFieldException e) {
             throw new ExceptionInInitializerError(e);
         }
     }
 
-    public static String reflectionExtractPath(FileImageInputStream stream)
+    public static String reflectionExtractPath(ImageInputStream iis)
             throws IllegalAccessException {
-        final RandomAccessFile raf =
-            (RandomAccessFile)fileImageInputStreamRafField.get(stream);
-        return (String)randomAccessFilePathField.get(raf);
+        if (iis instanceof FileImageInputStream) {
+            final RandomAccessFile raf =
+                (RandomAccessFile)fileImageInputStreamRafField.get(iis);
+            return (String)randomAccessFilePathField.get(raf);
+        } else if (iis instanceof FileCacheImageInputStream ||
+                iis instanceof MemoryCacheImageInputStream) {
+            final InputStream is;
+            if (iis instanceof FileCacheImageInputStream) {
+                is = (InputStream)
+                    fileCachedImageInputStreamStreamField.get(iis);
+            } else {
+                is = (InputStream)
+                    memoryCachedImageInputStreamStreamField.get(iis);
+            }
+
+            if (is instanceof FileInputStream) {
+                return (String)fileInputStreamPathField.get(is);
+            } else {
+                throw new IllegalArgumentException(
+                    "underlying stream type (" + is.getClass() +
+                    ") of InputStreamImageInputStream is not supported"
+                );
+            }
+        } else {
+            throw new IllegalArgumentException(
+                "input type (" + iis.getClass() + ") is not supported"
+            );
+        }
     }
 
     public LibRawImageReaderSpi() {
@@ -73,10 +119,12 @@ public class LibRawImageReaderSpi extends ImageReaderSpi {
 
     @Override
     public boolean canDecodeInput(Object source) /*throws IOException*/ {
-        if (source instanceof FileImageInputStream) {
+        if (source instanceof FileImageInputStream ||
+                source instanceof FileCacheImageInputStream ||
+                source instanceof MemoryCacheImageInputStream) {
             try {
                 final String path =
-                    reflectionExtractPath((FileImageInputStream)source);
+                    reflectionExtractPath((ImageInputStream)source);
                 final String suffix =
                     path.substring(path.lastIndexOf('.') + 1).toLowerCase();
 

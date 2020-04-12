@@ -76,21 +76,18 @@ public class LibRawImageReader extends ImageReader {
                 if (!inputFile.canRead()) throw new FileNotFoundException();
                 nativeErrorCode =
                     loadImageFromFilePath(inputFile.getCanonicalPath());
-            } else if (input instanceof FileImageInputStream) {
+            } else if (input instanceof ImageInputStream) {
                 try {
                     nativeErrorCode =
                         loadImageFromFilePath(
                             LibRawImageReaderSpi.reflectionExtractPath(
-                                (FileImageInputStream)input
+                                (ImageInputStream)input
                             )
                         );
                 } catch (IllegalAccessException e) {
                     nativeErrorCode =
                         loadImageFromImageInputStream((ImageInputStream)input);
                 }
-            } else if (input instanceof ImageInputStream) {
-                nativeErrorCode =
-                    loadImageFromImageInputStream((ImageInputStream)input);
             } else {
                 throw new IllegalStateException("Unsupported input type");
             }
