@@ -181,7 +181,7 @@ public class LibRawImageReader extends ImageReader {
         return new BufferedImage(
             new ComponentColorModel(
                 ColorSpace.getInstance(ColorSpace.CS_sRGB),
-                false, false, 1, DataBuffer.TYPE_BYTE
+                false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE
             ),
             Raster.createWritableRaster(
                 new PixelInterleavedSampleModel(
