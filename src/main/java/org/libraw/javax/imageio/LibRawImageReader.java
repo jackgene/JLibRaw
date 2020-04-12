@@ -20,8 +20,10 @@ import java.util.Iterator;
 
 public class LibRawImageReader extends ImageReader {
     // Most of these are assigned from JNI
-    private int width, height, colors, bits,
-            pixelStride, scanlineStride, bandOffsets[];
+    @SuppressWarnings("unused")
+    private int width, height, colors, bits, pixelStride, scanlineStride;
+    private int[] bandOffsets;
+    @SuppressWarnings("unused")
     private byte[] data;
     private Object initializedInput;
 
